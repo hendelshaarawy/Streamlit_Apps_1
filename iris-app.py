@@ -1,12 +1,20 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import ConfusionMatrixDisplay
+from sklearn.preprocessing import StandardScaler
 
 # Set page title and icon
 st.set_page_config(page_title="Iris Dataset Explorer", page_icon="🌸")
 
 # Sidebar navigation
-page = st.sidebar.selectbox("Select a Page", ["Home", "Data Overview", "Exploratory Data Analysis", "Extras"])
+page = st.sidebar.selectbox("Select a Page", ["Home", "Data Overview", "Exploratory Data Analysis", "Model Training and Evaluation", "Make Predictions!", "Extras"])
 
 # Load dataset
 df = pd.read_csv('data/iris.csv')
@@ -89,6 +97,94 @@ elif page == "Exploratory Data Analysis":
             chart_title = f'Distribution of {selected_col.title()}'
             st.plotly_chart(px.histogram(df, x=selected_col, color='species', title=chart_title))
 
+# Model Training and Evaluation Page
+elif page == "Model Training and Evaluation":
+    st.title("🛠️ Model Training and Evaluation")
+
+    # Sidebar for model selection
+    st.sidebar.subheader("Choose a Machine Learning Model")
+    model_option = st.sidebar.selectbox("Select a model", ["K-Nearest Neighbors", "Logistic Regression", "Random Forest"])
+
+    # Prepare the data
+    X = df.drop(columns = 'species')
+    y = df['species']
+
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42, stratify=y)
+
+    # Scale the data
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # Initialize the selected model
+    if model_option == "K-Nearest Neighbors":
+        k = st.sidebar.slider("Select the number of neighbors (k)", min_value=1, max_value=20, value=3)
+        model = KNeighborsClassifier(n_neighbors=k)
+    elif model_option == "Logistic Regression":
+        model = LogisticRegression()
+    else:
+        model = RandomForestClassifier()
+
+    # Train the model on the scaled data
+    model.fit(X_train_scaled, y_train)
+
+    # Display training and test accuracy
+    st.write(f"**Model Selected: {model_option}**")
+    st.write(f"Training Accuracy: {model.score(X_train_scaled, y_train):.2f}")
+    st.write(f"Test Accuracy: {model.score(X_test_scaled, y_test):.2f}")
+
+    # Display confusion matrix
+    st.subheader("Confusion Matrix")
+    fig, ax = plt.subplots()
+    ConfusionMatrixDisplay.from_estimator(model, X_test_scaled, y_test, ax=ax, cmap='Blues')
+    st.pyplot(fig)
+
+# Make Predictions Page
+elif page == "Make Predictions!":
+    st.title("🌸 Make Predictions")
+
+    st.subheader("Adjust the values below to make predictions on the Iris dataset:")
+
+    # User inputs for prediction
+    sepal_length = st.slider("Sepal Length (cm)", min_value=4.0, max_value=8.0, value=5.1)
+    sepal_width = st.slider("Sepal Width (cm)", min_value=2.0, max_value=4.5, value=3.5)
+    petal_length = st.slider("Petal Length (cm)", min_value=1.0, max_value=7.0, value=1.4)
+    petal_width = st.slider("Petal Width (cm)", min_value=0.1, max_value=2.5, value=0.2)
+
+    # User input dataframe
+    user_input = pd.DataFrame({
+        'sepal_length': [sepal_length],
+        'sepal_width': [sepal_width],
+        'petal_length': [petal_length],
+        'petal_width': [petal_width]
+    })
+
+    st.write("### Your Input Values")
+    st.dataframe(user_input)
+
+    # Use KNN (k=9) as the model for predictions
+    model = KNeighborsClassifier(n_neighbors=9)
+    X = df.drop(columns = 'species')
+    y = df['species']
+
+    # Scale the data
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Scale the user input
+    user_input_scaled = scaler.transform(user_input)
+
+    # Train the model on the scaled data
+    model.fit(X_scaled, y)
+
+    # Make predictions
+    prediction = model.predict(user_input_scaled)[0]
+
+    # Display the result
+    st.write(f"The model predicts that the iris is of the species: **{prediction}**")
+    st.balloons()
+        
 if page == "Extras":
 
     st.title("Adding Columns")

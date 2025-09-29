@@ -25,11 +25,11 @@ df = load_data()
 # ==============================
 # Load Model
 # ==============================
-@st.cache_resource
-def load_model():
-    return joblib.load("best_random_forest_pipeline.joblib")
+#@st.cache_resource
+#def load_model():
+#    return joblib.load("best_random_forest_pipeline.joblib")
 
-model = load_model()
+#model = load_model()
 
 # ==============================
 # Sidebar Navigation
